@@ -1,13 +1,37 @@
+import {useEffect, useState} from "react";
 import "./App.css";
 import Step1 from "./components/Step1/Step1";
 import axios from "axios";
 
-function App() {
-  const api = axios.create({
+
+const api = axios.create({
     withCredentials: true,
-    baseURL: "http://10.50.0.192:5000",
-  });
-  return <Step1 api={api} />;
+    baseURL: "http://localhost:5000",
+});
+
+function App() {
+    const [lead, setLead] = useState(null);
+
+    useEffect(() => {
+        api.get('/v1/lead/auth')
+            .then(res => {
+                console.log("res", res);
+                if (res.data.success) {
+                    setLead(res.data.data);
+                }
+            })
+            .catch(err => {
+                console.log("Err:", err);
+                setLead(null);
+            });
+    }, []);
+
+    return (
+        <>
+            {lead === null ? <Step1 api={api}/> : null}
+            {lead && lead.step === 1 ? <Step1 lead={lead} api={api}/> : null}
+        </>
+    );
 }
 
 export default App;
