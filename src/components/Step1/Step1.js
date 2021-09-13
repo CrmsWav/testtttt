@@ -23,7 +23,7 @@ const Step1 = ({ api }) => {
       emailAddress: mail,
       mobilePhone: phone,
       trainingPath: sectionChoice,
-      groupInfoSession: "2021-09-01",
+      groupInfoSession: dateChoice,
     };
 
     api

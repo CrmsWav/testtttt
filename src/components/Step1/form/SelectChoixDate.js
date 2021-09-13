@@ -1,6 +1,21 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import { dateToStr } from "../../../helpers/dateToStr";
 
 function SelectChoixDate({ setdateChoice }) {
+  const [dates, setDates] = useState([]);
+
+  useEffect(() => {
+    axios
+      .get("http://localhost:5000/v1/groupinfosession")
+      .then((res) => {
+        setDates(res.data);
+      })
+      .catch((err) => {
+        console.log("err : ", err);
+      });
+  }, []);
+
   return (
     <div>
       <select
@@ -10,11 +25,17 @@ function SelectChoixDate({ setdateChoice }) {
           setdateChoice(event.target.value);
         }}
       >
-        <option>--Dates--</option>
-        <option value="une date">Une date</option>
-        <option value="une autre date">Une autre date</option>
-        <option value="et encore une">et encore une</option>
-        <option value="et une autre">et une autre</option>
+        <option value={dates.length ? dates[0] : ""}>--Dates--</option>
+        {dates.length &&
+          dates.map((date) => {
+            let dateStr = dateToStr(date);
+
+            return (
+              <option key={date} value={date}>
+                {dateStr}
+              </option>
+            );
+          })}
       </select>
       <br />
     </div>
