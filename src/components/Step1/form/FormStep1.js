@@ -1,219 +1,148 @@
-import React, { useState, useEffect } from "react";
+import React, {useState, useEffect} from "react";
 import RadioSectionChoice from "./RadioSectionChoice";
 import SelectDateChoice from "./SelectDateChoice";
 import TextFields from "./TextFields.js";
 import validator from "validator";
+import {checkEmail, checkMobilePhone, checkName} from "../../../helpers/CheckInputs.js";
 
-const FormStep1 = ({ api }) => {
-  // Declaration of state components
-  const [sectionChoice, setSectionChoice] = useState("");
-  const [dateChoice, setdateChoice] = useState("");
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [mail, setMail] = useState("");
-  const [phone, setPhone] = useState("");
-
-  const [errors, setErrors] = useState({
-    firstName: "",
+const initialState = {
+    trainingPath: "",
+    groupInfoSession: "",
     lastName: "",
+    firstName: "",
     emailAddress: "",
-    mobilePhone: "",
-  });
+    mobilePhone: ""
+};
 
-  const [disable, setDisable] = useState(true);
-  const [empty, setEmpty] = useState(true);
+const FormStep1 = ({api}) => {
+    const [formData, setFormData] = useState(initialState);
 
-  useEffect(() => {
-    checkErrors();
-  }, [errors]);
+    const [errors, setErrors] = useState({
+        firstName: "",
+        lastName: "",
+        emailAddress: "",
+        mobilePhone: "",
+    });
 
-  useEffect(() => {
-    if (
-      sectionChoice === "" ||
-      dateChoice === "" ||
-      firstName === "" ||
-      lastName === "" ||
-      mail === "" ||
-      phone === ""
-    ) {
-      setEmpty(true);
-    } else {
-      setEmpty(false);
-    }
-  }, [sectionChoice, dateChoice, firstName, lastName, mail, phone]);
+    const [disable, setDisable] = useState(true);
+    const [empty, setEmpty] = useState(true);
 
-  useEffect(() => {
-    console.log(disable || empty);
-    console.log("disable :", disable);
-    console.log("empty :", empty);
-  }, [disable, empty]);
+    useEffect(() => {
+        checkErrors();
+    }, [errors]);
 
-  // On submit :
-  const handleSubmit = (event) => {
-    event.preventDefault();
+    useEffect(() => {
+        for (const [, value] of Object.entries(formData)) {
+            if (value === "") {
+                setEmpty(true);
+                return;
+            }
+        }
+        setEmpty(false);
+    }, [formData]);
 
-    const lead = {
-      trainingPath: sectionChoice,
-      groupInfoSession: "2021-09-01",
-      firstName: firstName,
-      lastName: lastName,
-      emailAddress: mail,
-      mobilePhone: phone,
+    useEffect(() => {
+        console.log(disable || empty);
+        console.log("disable :", disable);
+        console.log("empty :", empty);
+    }, [disable, empty]);
+
+    // On submit :
+    const handleSubmit = (event) => {
+        event.preventDefault();
+
+        //
+        api
+            .post("/v1/leads", formData)
+            .then((res) => {
+                console.log(res);
+            })
+            .catch((err) => {
+                console.log(err?.response?.data.message);
+            });
+
+        console.log(formData);
     };
 
-    //
-    api
-      .post("/v1/leads", lead)
-      .then((res) => {
-        console.log(res);
-      })
-      .catch((err) => {
-        console.log(err?.response?.data.message);
-      });
 
-    console.log(sectionChoice);
-    console.log(dateChoice);
-    console.log(lastName);
-    console.log(firstName);
-    console.log(mail);
-    console.log(phone);
+    const handleInput = (e) => {
+        checkInput(e.target.name, e.target.value);
+        setFormData({...formData, [e.target.name]: e.target.value});
+    };
 
-    // if (errors !== "") {
-    //   setDisable(true);
-    //   return;
-    // }
-  };
+    const checkInput = (input, value) => {
+        if (input === 'emailAddress')
+            setErrors({...errors, emailAddress: checkEmail(value)});
+        else if (input === 'mobilePhone')
+            setErrors({...errors, mobilePhone: checkMobilePhone(value)});
+        else if (input === 'firstName' || input === 'lastName')
+            setErrors({...errors, [input]: checkName(value)});
+    };
 
-  {
-    /************************* handleFirstName LastName Mail Phone **********************************/
-  }
+    const setTrainingPath = (trainingPath) => {
+        setFormData({...formData, trainingPath: trainingPath});
+    };
 
-  function handleFirstName(e) {
-    if (e.target.value.length < 2) {
-      setErrors({
-        ...errors,
-        firstName: "Minimum 2 caractères pour le prénom",
-      });
-    } else {
-      setErrors({
-        ...errors,
-        firstName: "",
-      });
-    }
-    setFirstName(e.target.value);
-  }
+    useEffect(() => {
+        console.log("formData ->", formData);
+    }, [formData]);
 
-  function handleLastName(e) {
-    if (e.target.value.length < 2) {
-      setErrors({
-        ...errors,
-        lastName: "Minimum 2 caractères pour le nom",
-      });
-    } else {
-      setErrors({
-        ...errors,
-        lastName: "",
-      });
-    }
-    setLastName(e.target.value);
-  }
 
-  function handleMail(e) {
-    const gmailErrors = [
-      "gmail.fr",
-      "gmail.cpm",
-      "gmail.cim",
-      "gmail.col",
-      "gmail.cop",
-    ];
-    const email = e.target.value.split("@");
-    console.log(email);
+    const checkErrors = () => {
+        for (const [, value] of Object.entries(errors)) {
+            if (value !== "") {
+                setDisable(true);
+                return;
+            }
+        }
+        setDisable(false);
+    };
 
-    if (!validator.isEmail(e.target.value)) {
-      setErrors({
-        ...errors,
-        emailAddress: "Mauvais mail",
-      });
-    } else if (email.length === 2 && gmailErrors.includes(email[1])) {
-      setErrors({
-        ...errors,
-        emailAddress: `Vous êtes vraiment sûr(e) de ${email[1]} ?`,
-      });
-    } else {
-      setErrors({ ...errors, emailAddress: "" });
-    }
-    setMail(e.target.value);
-  }
-
-  function handlePhone(e) {
-    if (e.target.value.length > 0 && e.target.value.charAt(0) !== "0") {
-      setErrors({
-        ...errors,
-        mobilePhone: "Le numero doit commencer par 06 ou 07",
-      });
-    } else if (!validator.isMobilePhone(e.target.value, "fr-FR")) {
-      setErrors({ ...errors, mobilePhone: "Mauvais téléphone" });
-    } else {
-      setErrors({ ...errors, mobilePhone: "" });
-    }
-    setPhone(e.target.value);
-  }
-
-  {
-    /************************************************************************************************/
-  }
-
-  const checkErrors = () => {
-    for (const [key, value] of Object.entries(errors)) {
-      // console.log(`${key}: ${value}`);
-      if (value !== "") {
-        setDisable(true);
-        return;
-      }
-    }
-    setDisable(false);
-  };
-
-  return (
-    <div className="App">
-      <RadioSectionChoice
-        sectionChoice={sectionChoice}
-        setSectionChoice={setSectionChoice}
-      />
-      <SelectDateChoice setdateChoice={setdateChoice} />
-      <br />
-      <TextFields
-        label="Nom"
-        error={errors.lastName}
-        onChange={handleLastName}
-        value={lastName}
-      />
-      <TextFields
-        label="Prénom"
-        error={errors.firstName}
-        onChange={handleFirstName}
-        value={firstName}
-      />
-      <TextFields
-        label="Email"
-        type="email"
-        error={errors.emailAddress}
-        onChange={handleMail}
-        value={mail}
-      />
-      <TextFields
-        label="Téléphone"
-        type="tel"
-        error={errors.mobilePhone}
-        onChange={handlePhone}
-        value={phone}
-      />
-      <br />
-      <button type="submit" onClick={handleSubmit} disabled={disable || empty}>
-        C'est good
-      </button>
-    </div>
-  );
+    return (
+        <div className="App">
+            <RadioSectionChoice
+                trainingPath={formData.trainingPath}
+                setTrainingPath={setTrainingPath}
+                name={"trainingPath"}
+            />
+            <SelectDateChoice onChange={handleInput} name={"groupInfoSession"}/>
+            <br/>
+            <TextFields
+                label="Nom"
+                error={errors.lastName}
+                onChange={handleInput}
+                value={formData.lastName}
+                name={"lastName"}
+            />
+            <TextFields
+                label="Prénom"
+                error={errors.firstName}
+                onChange={handleInput}
+                value={formData.firstName}
+                name={"firstName"}
+            />
+            <TextFields
+                label="Email"
+                type="email"
+                error={errors.emailAddress}
+                onChange={handleInput}
+                value={formData.emailAddress}
+                name={"emailAddress"}
+            />
+            <TextFields
+                label="Téléphone"
+                type="tel"
+                error={errors.mobilePhone}
+                onChange={handleInput}
+                value={formData.mobilePhone}
+                name={"mobilePhone"}
+            />
+            <br/>
+            <button type="submit" onClick={handleSubmit} disabled={disable || empty}>
+                C'est good
+            </button>
+        </div>
+    );
 };
 
 export default FormStep1;
